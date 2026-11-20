@@ -5,6 +5,9 @@ backend:
   base_url: https://sveltia-cms-auth.adam-artajew.workers.dev
   skip_ci: true
   preview_context: prod-live
+  commit_messages:
+    delete: '[skip ci] Delete {{collection}} "{{slug}}"' # skip publish to prod on delete
+    deleteMedia: '[skip ci] Delete "{{path}}"' # skip publish to prod on delete
 
 site_url: https://acid-fairies-lab.github.io/prod/
 display_url: https://acid-fairies-lab.github.io/prod/
