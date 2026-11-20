@@ -1,0 +1,286 @@
+backend:
+  name: github
+  repo: acid-fairies-lab/src
+  branch: main
+  base_url: https://sveltia-cms-auth.adam-artajew.workers.dev
+  skip_ci: true
+  preview_context: prod-live
+
+site_url: https://acid-fairies-lab.github.io/prod/
+display_url: https://acid-fairies-lab.github.io/prod/
+
+media_folder: /content/media
+
+collections:
+  - name: pages
+    label: Pages
+    label_singular: Page
+    folder: /content/pages
+    media_folder: '{{media_folder}}/pages'
+    summary: "{{title}} ({{permalink}}) {{comment | ternary('_', '')}}{{comment}}{{comment | ternary('_', '')}}"
+    description: Composable pages built from reusable blocks.
+    icon: web
+    fields:
+      - {label: Title, name: title, widget: string, hint: Used for browser title only.}
+      - {label: Permalink, name: permalink, widget: string, hint: "Permanent static hyperlink to a page. A leading slash is optional. Use 'home' for /."}
+      - {label: Comment, name: comment, widget: string, hint: Optional page description., required: false}
+      - label: Blocks
+        name: blocks
+        label_singular: Block
+        widget: list
+        required: false
+        collapsed: true
+        types:
+          - label: Title
+            name: heading_block
+            fields:
+              - {label: Title, name: title, widget: string}
+              - {label: Size, name: size, widget: select, options: [h1, h2, h3, h4, h5, h6], default: h1}
+          - label: Intro
+            name: intro_block
+            fields:
+              - {label: Heading, name: heading, widget: string}
+              - {label: Size, name: size, widget: select, options: [h1, h2, h3, h4, h5, h6], default: h1}
+              - {label: Lead, name: lead, widget: markdown}
+              - {label: Body, name: body, widget: markdown}
+              - {label: Button, name: button, widget: string, required: false}
+              - {label: Link, name: link, widget: string, required: false}
+              - {label: Alignment, name: alignment, widget: select, options: [Left, Center, Right], default: Left}
+          - label: Hero
+            name: hero_block
+            fields:
+              - {label: Intro, name: intro, widget: markdown, required: false}
+              - {label: Button, name: button, widget: string, required: false}
+              - {label: Link, name: link, widget: string, required: false}
+              - {label: Name, name: name, widget: string}
+              - {label: Size, name: size, widget: select, options: [h1, h2, h3, h4, h5, h6], default: h1}
+              - {label: Lead, name: lead, widget: markdown, required: false}
+              - {label: Body, name: body, widget: markdown, required: false}
+              - {label: Image, name: image, widget: image}
+          - label: Callout
+            name: callout_block
+            fields:
+              - {label: Name, name: name, widget: string}
+              - {label: Size, name: size, widget: select, options: [h1, h2, h3, h4, h5, h6], default: h1}
+              - {label: Lead, name: lead, widget: markdown}
+              - {label: Body, name: body, widget: markdown}
+              - {label: Button, name: button, widget: string, required: false}
+              - {label: Link, name: link, widget: string, required: false}
+              - {label: Image, name: image, widget: image}
+          - label: Accordion
+            name: accordion_block
+            fields:
+              - {label: Heading, name: heading, widget: string}
+              - {label: Size, name: size, widget: select, options: [h1, h2, h3, h4, h5, h6], default: h2}
+              - label: Items
+                name: items
+                widget: list
+                fields:
+                  - {label: Title, name: title, widget: string}
+                  - {label: First, name: first, widget: string}
+                  - {label: Second, name: second, widget: string}
+                  - {label: Text, name: text, widget: markdown}
+          - label: Numbered Accordion
+            name: numbered_accordion_block
+            fields:
+              - {label: Heading, name: heading, widget: string}
+              - {label: Size, name: size, widget: select, options: [h1, h2, h3, h4, h5, h6], default: h2}
+              - label: Items
+                name: items
+                widget: list
+                fields:
+                  - {label: Title, name: title, widget: string}
+                  - {label: Text, name: text, widget: markdown}
+          - label: Contacts
+            name: contacts_block
+            fields:
+              - label: Items
+                name: items
+                widget: list
+                fields:
+                  - {label: Title, name: title, widget: string}
+                  - {label: Contact, name: contact, widget: string}
+                  - {label: URL, name: href, widget: string, required: false, hint: 'Optional link (e.g. mailto: or tel:).'}
+          - label: Section Designs
+            name: section_designs_block
+            fields:
+              - {label: Heading, name: heading, widget: string}
+              - {label: Size, name: size, widget: select, options: [h1, h2, h3, h4, h5, h6], default: h1}
+              - label: Section
+                name: section
+                hint: 'Optional. Choose None to show all published designs, or filter by section defined in [Settings > Designs](#/collections/settings/entries/designs).'
+                widget: relation
+                required: false
+                collection: settings
+                file: designs
+                value_field: '{{sections.*}}'
+                display_fields: ['{{sections.*}}']
+              - {label: Page Size, name: pageSize, widget: number, hint: Number of designs to show per page.}
+          - label: Design Details
+            name: design_details_block
+            fields:
+              - {label: Size, name: size, widget: select, options: [h1, h2, h3, h4, h5, h6], default: h1}
+              - {label: Order form label, name: orderFormLabel, widget: string}
+
+  - name: designs
+    label: Designs
+    label_singular: Design
+    description: Managable collection of designs.
+    folder: /content/designs
+    media_folder: '{{media_folder}}/designs'
+    icon: design_services
+    summary: "[{{sortDate | date('YYYY-MM-DD')}}] {{title}} ({{section}}) {{isDraft | ternary('**_#draft_**', '')}}"
+    sortable_fields:
+      fields: [sortDate, title]
+      default:
+        field: sortDate
+        direction: descending
+    view_groups:
+      - {field: section, label: Section}
+      - {field: isDraft, label: Draft}
+    fields:
+      - {label: Title, name: title, widget: string}
+      - {label: Permalink, name: permalink, widget: string, hint: Permanent static hyperlink to the design. A leading slash is optional.}
+      - {label: Subtitle, name: subtitle, widget: string, required: false, hint: Optional text below the design title.}
+      - label: Intro
+        name: intro
+        widget: markdown
+        required: false
+        hint: Optional introduction below the title and subtitle, above the size chart and add-to-cart form.
+      - {label: Badge, name: badge, widget: string, required: false, hint: Optional label on product tile and featured image.}
+      - label: Sort Date
+        name: sortDate
+        widget: datetime
+        type: date
+        default: '{{now}}'
+        hint: Used for display order (newest first).
+      - label: Details Page
+        name: detailsPage
+        hint: "Choose existing page to use as the design's details page. Selected page should include the Design Details block."
+        widget: relation
+        collection: pages
+        display_fields: ['{{title}} ({{permalink}}) {{comment}}']
+      - label: Section
+        name: section
+        hint: 'Manage available sections in [Settings > Designs](#/collections/settings/entries/designs).'
+        widget: relation
+        required: false
+        collection: settings
+        file: designs
+        value_field: '{{sections.*}}'
+        display_fields: ['{{sections.*}}']
+      - label: Featured Image
+        name: featuredImage
+        widget: image
+        required: true
+        hint: Used on product tiles and first in the gallery.
+      - label: Additional Images
+        name: additionalImages
+        label_singular: Image
+        widget: list
+        required: false
+        collapsed: true
+        allow_reorder: true
+        thumbnail: image
+        hint: Drag images to change their order. The first four appear in the fixed row; the rest in the lower carousel.
+        fields:
+          - {label: Image, name: image, widget: image}
+      - {label: PayPal Product ID, name: paypalProductId, widget: string, required: false}
+      - label: Size Chart
+        name: sizeChart
+        hint: 'Manage available size charts in [Settings > Designs](#/collections/settings/entries/designs).'
+        widget: relation
+        dropdown_threshold: 0
+        required: false
+        collection: settings
+        file: designs
+        search_fields: ['sizeCharts.*.name']
+        value_field: '{{sizeCharts.*.id}}'
+        display_fields: ['{{sizeCharts.*.name}} ({{sizeCharts.*.id}})']
+      - {label: Description, name: description, widget: markdown}
+      - {label: Body, name: body, widget: markdown}
+      - {label: Draft, name: isDraft, widget: boolean, default: false, hint: Hide design from public site.}
+
+  - name: settings
+    label: Settings
+    description: Website-wide settings.
+    icon: settings
+    media_folder: '{{media_folder}}/settings'
+    files:
+      - label: Layout
+        name: layout
+        file: /content/settings/layout.md
+        icon: view_quilt
+        fields:
+          - {label: Section, name: section, widget: hidden, default: layout}
+          - {label: Main Page Title, name: mainPageTitle, widget: string}
+          - {label: Sans Font Family (Google), name: fontSansFamily, widget: string, required: false, hint: 'Example: Road Rage (search more on [Google Fonts](https://fonts.google.com/))'}
+          - {label: Sans Font Scale, name: fontSansScale, widget: number, value_type: float, step: 0.1, required: false, default: 1, hint: '1 = unchanged. Lower shrinks, higher enlarges.'}
+          - {label: Mono Font Family (Google), name: fontMonoFamily, widget: string, required: false, hint: 'Example: JetBrains Mono (search more on [Google Fonts](https://fonts.google.com/))'}
+          - {label: Mono Font Scale, name: fontMonoScale, widget: number, value_type: float, step: 0.1, required: false, default: 1, hint: '1 = unchanged. Lower shrinks, higher enlarges.'}
+          - {label: Primary Color, name: primaryColor, widget: color, enableAlpha: true, allowInput: true, hint: 'Primary text, headings, borders, strong dark UI'}
+          - {label: Secondary Color, name: secondaryColor, widget: color, enableAlpha: true, allowInput: true, hint: Muted/metadata text and hover states}
+          - {label: Contrast Color, name: contrastColor, widget: color, enableAlpha: true, allowInput: true, hint: Light contrast for text-on-dark and light surfaces}
+          - {label: Favicon Image, name: faviconImage, widget: image, required: false, hint: Favicon image used in browser tab.}
+          - {label: Background Image, name: backgroundImage, widget: image, required: false}
+          - {label: Design Tile Image, name: designTileImage, widget: image, required: false}
+          - {label: Decorator Image, name: decoratorImage, widget: image, required: false}
+          - {label: Symbol Image, name: symbolImage, widget: image, required: false}
+          - {label: Copyright, name: copyright, widget: markdown, required: false, hint: Copyright notice used in page footer.}
+      - label: Navigation
+        name: navigation
+        file: /content/settings/navigation.md
+        icon: menu
+        fields:
+          - {label: Section, name: section, widget: hidden, default: navigation}
+          - label: Logo Image
+            name: logoImage
+            widget: image
+            required: false
+            hint: Complete desktop header logo. Use an image cropped close to the artwork; original colors are preserved.
+          - label: 404 Page
+            name: notFoundPage
+            widget: relation
+            collection: pages
+            display_fields: ['{{title}} ({{permalink}}) {{comment}}']
+            hint: Choose which existing page is used for 404 responses.
+          - {label: Navigation Heading, name: navigationHeading, widget: string, hint: Used in page footer.}
+          - label: Navigation Links
+            name: navigationLinks
+            widget: list
+            hint: Used in page header and footer.
+            fields:
+              - {label: Title, name: title, widget: string}
+              - {label: URL, name: href, widget: string}
+          - {label: Socials Heading, name: socialsHeading, widget: string, hint: Used in footer.}
+          - label: Social Links
+            name: socialsLinks
+            widget: list
+            hint: Used in page footer.
+            fields:
+              - {label: Title, name: title, widget: string}
+              - {label: URL, name: href, widget: string}
+      - label: Designs
+        name: designs
+        file: /content/settings/designs.md
+        icon: design_services
+        fields:
+          - {label: Section, name: section, widget: hidden, default: designs}
+          - {label: Sections, name: sections, widget: list, hint: Put one section per line.}
+          - label: Size Charts
+            name: sizeCharts
+            widget: list
+            required: false
+            collapsed: true
+            thumbnail: image
+            fields:
+              - {label: ID, name: id, widget: uuid}
+              - {label: Name, name: name, widget: string, hint: Shown as the link text on product pages.}
+              - {label: Image, name: image, widget: image}
+      - label: Shop
+        name: shop
+        file: /content/settings/shop.md
+        icon: shopping_cart
+        fields:
+          - {label: Section, name: section, widget: hidden, default: shop}
+          - {label: PayPal Merchant ID, name: paypalMerchantId, widget: string, required: true}
