@@ -9,8 +9,7 @@ backend:
     delete: '[skip ci] Delete {{collection}} "{{slug}}"' # skip publish to prod on delete
     deleteMedia: '[skip ci] Delete "{{path}}"' # skip publish to prod on delete
 
-site_url: https://acid-fairies-lab.github.io/prod/
-display_url: https://acid-fairies-lab.github.io/prod/
+site_url: https://acidfairies.cc.cd
 
 media_folder: /content/media
 
