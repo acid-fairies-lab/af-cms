@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="robots" content="noindex" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Publish Lab PROD</title>
+  <title>Publish to Production</title>
   <style>
     body { font: 16px system-ui, sans-serif; padding: 2rem; }
     button { font: inherit; padding: .65rem 1rem; cursor: pointer; }
@@ -12,7 +12,9 @@
   </style>
 </head>
 <body>
-  <button type="button" id="publish">Publish to LAB production</button>
+  <h2>Publish to Production</h2>
+  <p>Publish all saved changes to the production website.</p>
+  <button type="button" id="publish">Publish Changes</button>
   <p id="status" role="status" hidden></p>
   <p><a id="actions" target="_blank" rel="noopener noreferrer" hidden>View deployment workflow</a></p>
   <script type="module">
@@ -38,7 +40,7 @@
     }
 
     button.addEventListener('click', async () => {
-      if (!confirm('Are you sure you want to publish the current main branch to the LAB production website? Staging changes are not merged yet.')) return
+      if (!confirm('Are you sure you want to publish all changes to the production website?')) return
 
       button.disabled = true
       actions.hidden = true
