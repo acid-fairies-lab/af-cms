@@ -1,6 +1,6 @@
 backend:
   name: github
-  repo: acid-fairies-lab/src
+  repo: acid-fairies-lab/af-src
   branch: stg
   base_url: https://sveltia-cms-auth.adam-artajew.workers.dev
 
