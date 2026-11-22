@@ -12,8 +12,8 @@
   </style>
 </head>
 <body>
-  <h2>Publish to Production</h2>
   <p>Publish all saved changes to the production website.</p>
+  <p id="changes" role="status">Checking for unpublished changes…</p>
   <button type="button" id="publish">Publish Changes</button>
   <p id="status" role="status" hidden></p>
   <p><a id="actions" target="_blank" rel="noopener noreferrer" hidden>View deployment workflow</a></p>
@@ -21,6 +21,7 @@
     const repository = 'acid-fairies-lab/src'
     const button = document.querySelector('#publish')
     const status = document.querySelector('#status')
+    const changes = document.querySelector('#changes')
     const actions = document.querySelector('#actions')
 
     function cmsSessionToken() {
@@ -37,6 +38,19 @@
       })
       if (!response.ok) throw new Error('GitHub API returned HTTP ' + response.status)
       return response.json()
+    }
+
+    async function checkPendingChanges() {
+      try {
+        const comparison = await githubGet('/repos/' + repository + '/compare/main...stg', cmsSessionToken())
+        const count = comparison.ahead_by
+        if (!Number.isInteger(count)) throw new Error('Invalid branch comparison')
+        changes.textContent = count
+          ? count + ' staging commit' + (count === 1 ? '' : 's') + ' awaiting publication.'
+          : 'No staging commits awaiting publication.'
+      } catch {
+        changes.textContent = 'Could not check unpublished changes.'
+      }
     }
 
     button.addEventListener('click', async () => {
@@ -79,6 +93,8 @@
         button.disabled = false
       }
     })
+
+    checkPendingChanges()
   </script>
 </body>
 </html>
