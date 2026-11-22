@@ -25,36 +25,30 @@ async function githubGet(path, token) {
 }
 
 async function checkPendingChanges() {
+  files.replaceChildren()
   try {
-    const comparison = await githubGet(`/repos/${repository}/compare/main...stg`, cmsSessionToken())
-    const count = comparison.ahead_by
-    if (!Number.isInteger(count)) {
-      throw new TypeError('Invalid branch comparison')
+    const comparison = await githubGet(`/repos/${repository}/compare/prod-published...main`, cmsSessionToken())
+    const changed = comparison.files ?? []
+    changes.textContent = changed.length
+      ? `${changed.length} changed file${changed.length === 1 ? '' : 's'} awaiting publication:`
+      : 'No changes awaiting publication.'
+    for (const { status, filename } of changed.slice(0, 30)) {
+      const item = document.createElement('li')
+      item.textContent = `${status}: ${filename}`
+      files.append(item)
     }
-    changes.textContent = count
-      ? `${count} staging commit${count === 1 ? '' : 's'} awaiting publication:`
-      : 'No staging changes awaiting publication.'
-    files.replaceChildren()
-    if (count) {
-      const changed = comparison.files ?? []
-      for (const { status, filename } of changed.slice(0, 30)) {
-        const item = document.createElement('li')
-        item.textContent = `${status}: ${filename}`
-        files.append(item)
-      }
-      if (changed.length > 30) {
-        const item = document.createElement('li')
-        item.textContent = `…and ${changed.length - 30} more files`
-        files.append(item)
-      }
-      files.hidden = !changed.length
+    if (changed.length > 30) {
+      const item = document.createElement('li')
+      item.textContent = `…and ${changed.length - 30} more files`
+      files.append(item)
     }
-    else {
-      files.hidden = true
-    }
+    files.hidden = !changed.length
   }
-  catch {
-    changes.textContent = 'Could not check unpublished changes.'
+  catch (error) {
+    files.hidden = true
+    changes.textContent = error.message === 'GitHub API returned HTTP 404'
+      ? 'Production baseline not initialized. Publish once to start tracking changes.'
+      : 'Could not check unpublished changes.'
   }
 }
 
