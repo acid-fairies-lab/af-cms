@@ -1,6 +1,6 @@
 const repository = 'acid-fairies-lab/af-src'
 const button = document.querySelector('#publish')
-const status = document.querySelector('#status')
+const statusElement = document.querySelector('#status')
 const changes = document.querySelector('#changes')
 const files = document.querySelector('#files')
 const actions = document.querySelector('#actions')
@@ -66,8 +66,8 @@ button.addEventListener('click', async () => {
 
   button.disabled = true
   actions.hidden = true
-  status.hidden = false
-  status.textContent = 'Requesting publication…'
+  statusElement.hidden = false
+  statusElement.textContent = 'Requesting publication…'
 
   try {
     const token = cmsSessionToken()
@@ -89,12 +89,12 @@ button.addEventListener('click', async () => {
       throw new Error(`GitHub rejected the publication request: HTTP ${response.status}`)
     }
 
-    status.textContent = 'Publication requested. Follow its result in GitHub Actions.'
+    statusElement.textContent = 'Publication requested. Follow its result in GitHub Actions.'
     actions.href = `https://github.com/${repository}/actions/workflows/prod.yml`
     actions.hidden = false
   }
   catch (error) {
-    status.textContent = error.message === 'GitHub API returned HTTP 401'
+    statusElement.textContent = error.message === 'GitHub API returned HTTP 401'
       ? 'GitHub session expired. Refresh or sign in to Sveltia CMS and retry.'
       : error.message || 'Failed to request publication.'
   }
