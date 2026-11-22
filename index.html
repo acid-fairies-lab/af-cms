@@ -9,6 +9,12 @@
     <script src="https://unpkg.com/@sveltia/cms/dist/sveltia-cms.js"></script>
     <script>
       CMS.registerCustomPage({
+        id: 'publish-auth',
+        label: 'Publish Lab PROD',
+        icon: 'publish',
+        url: './publish-auth.html',
+      })
+      CMS.registerCustomPage({
         id: 'stg',
         label: 'Preview STG',
         icon: 'visibility',
