@@ -9,18 +9,23 @@
     body { font: 16px system-ui, sans-serif; padding: 2rem; max-width: 40rem; line-height: 1.5; }
     button { font: inherit; padding: .65rem 1rem; cursor: pointer; }
     button:disabled { cursor: wait; }
+    .actions { display: flex; flex-wrap: wrap; gap: .75rem; }
   </style>
 </head>
 <body>
   <h2>Publish to lab PROD</h2>
   <p>This experiment triggers <code>sveltia-cms-publish</code> in the source repository. The current workflow redeploys <code>src/main</code> to the <strong>lab</strong> PROD website; it does <strong>not</strong> yet merge <code>stg</code> into <code>main</code>.</p>
-  <button type="button" id="publish">Trigger lab PROD deployment</button>
+  <div class="actions">
+    <button type="button" id="publish-session">Publish using CMS session</button>
+    <button type="button" id="publish-oauth">Publish using GitHub OAuth</button>
+  </div>
+  <p><small>Experiment: both buttons trigger the same lab deployment. CMS session reuses Sveltia's stored GitHub token, while OAuth opens the GitHub authorization window.</small></p>
   <p role="status" id="status">No deployment requested.</p>
   <p><a id="actions" hidden target="_blank" rel="noopener noreferrer">View GitHub Actions</a></p>
   <script type="module">
     const worker = 'https://sveltia-cms-auth.adam-artajew.workers.dev'
     const repository = 'acid-fairies-lab/src'
-    const publish = document.querySelector('#publish')
+    const buttons = [...document.querySelectorAll('.actions button')]
     const actions = document.querySelector('#actions')
     const status = document.querySelector('#status')
 
@@ -70,45 +75,62 @@
       return response.json()
     }
 
-    publish.addEventListener('click', async () => {
+    function cmsSessionToken() {
+      // Experimental: Sveltia does not expose a public session-token API.
+      const account = JSON.parse(localStorage.getItem('sveltia-cms.user') || '{}')
+      if (account.backendName !== 'github' || typeof account.token !== 'string' || !account.token)
+        throw new Error('No GitHub session found in Sveltia CMS. Sign in to CMS and retry.')
+      return account.token
+    }
+
+    async function requestPublish(token) {
+      const [user, repo] = await Promise.all([
+        githubGet('/user', token),
+        githubGet('/repos/' + repository, token),
+      ])
+      if (repo.full_name !== repository || repo.permissions?.push !== true)
+        throw new Error('GitHub account ' + user.login + ' has no write access to ' + repository)
+
+      status.textContent = 'Requesting deployment…'
+      const response = await fetch('https://api.github.com/repos/' + repository + '/dispatches', {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer ' + token,
+          Accept: 'application/vnd.github+json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ event_type: 'sveltia-cms-publish' }),
+      })
+      if (response.status !== 204)
+        throw new Error('GitHub rejected the deployment request: HTTP ' + response.status)
+
+      status.textContent = 'GitHub accepted the request from ' + user.login + '. Check the workflow for its result.'
+      actions.href = 'https://github.com/' + repository + '/actions/workflows/prod.yml'
+      actions.hidden = false
+      actions.textContent = 'View deployment workflow'
+    }
+
+    async function publish(method) {
       if (!confirm('Trigger a LAB PROD deployment from src/main? This does not merge staging changes.')) return
 
-      publish.disabled = true
+      buttons.forEach(button => { button.disabled = true })
       actions.hidden = true
-      status.textContent = 'Authorizing with GitHub…'
+      status.textContent = method === 'oauth' ? 'Authorizing with GitHub…' : 'Checking CMS session…'
 
       try {
-        const token = await authorize()
-        const [user, repo] = await Promise.all([
-          githubGet('/user', token),
-          githubGet('/repos/' + repository, token),
-        ])
-        if (repo.full_name !== repository || repo.permissions?.push !== true)
-          throw new Error('GitHub account ' + user.login + ' has no write access to ' + repository)
-
-        status.textContent = 'Requesting deployment…'
-        const response = await fetch('https://api.github.com/repos/' + repository + '/dispatches', {
-          method: 'POST',
-          headers: {
-            Authorization: 'Bearer ' + token,
-            Accept: 'application/vnd.github+json',
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ event_type: 'sveltia-cms-publish' }),
-        })
-        if (response.status !== 204)
-          throw new Error('GitHub rejected the deployment request: HTTP ' + response.status)
-
-        status.textContent = 'GitHub accepted the request from ' + user.login + '. Check the workflow for its result.'
-        actions.href = 'https://github.com/' + repository + '/actions/workflows/prod.yml'
-        actions.hidden = false
-        actions.textContent = 'View deployment workflow'
+        const token = method === 'oauth' ? await authorize() : cmsSessionToken()
+        await requestPublish(token)
       } catch (error) {
-        status.textContent = error.message || 'Failed to request deployment.'
+        status.textContent = error.message === 'GitHub API returned HTTP 401'
+          ? 'GitHub token expired or revoked. Sign in to CMS again or try GitHub OAuth.'
+          : error.message || 'Failed to request deployment.'
       } finally {
-        publish.disabled = false
+        buttons.forEach(button => { button.disabled = false })
       }
-    })
+    }
+
+    document.querySelector('#publish-session').addEventListener('click', () => publish('session'))
+    document.querySelector('#publish-oauth').addEventListener('click', () => publish('oauth'))
   </script>
 </body>
 </html>
