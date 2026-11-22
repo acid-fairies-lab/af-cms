@@ -9,11 +9,13 @@
     body { font: 16px system-ui, sans-serif; padding: 2rem; }
     button { font: inherit; padding: .65rem 1rem; cursor: pointer; }
     button:disabled { cursor: wait; }
+    #files { font-family: ui-monospace, monospace; overflow-wrap: anywhere; }
   </style>
 </head>
 <body>
-  <p>Publish all saved changes to the production website.</p>
+  <p>Publish all saved changes to the production website. <a href="https://stg.acidfairies.cc.cd" target="_blank" rel="noopener noreferrer">Preview STG</a></p>
   <p id="changes" role="status">Checking for unpublished changes…</p>
+  <ul id="files" hidden></ul>
   <button type="button" id="publish">Publish Changes</button>
   <p id="status" role="status" hidden></p>
   <p><a id="actions" target="_blank" rel="noopener noreferrer" hidden>View deployment workflow</a></p>
@@ -22,6 +24,7 @@
     const button = document.querySelector('#publish')
     const status = document.querySelector('#status')
     const changes = document.querySelector('#changes')
+    const files = document.querySelector('#files')
     const actions = document.querySelector('#actions')
 
     function cmsSessionToken() {
@@ -46,8 +49,25 @@
         const count = comparison.ahead_by
         if (!Number.isInteger(count)) throw new Error('Invalid branch comparison')
         changes.textContent = count
-          ? count + ' staging commit' + (count === 1 ? '' : 's') + ' awaiting publication.'
-          : 'No staging commits awaiting publication.'
+          ? count + ' staging commit' + (count === 1 ? '' : 's') + ' awaiting publication:'
+          : 'No staging changes awaiting publication.'
+        files.replaceChildren()
+        if (count) {
+          const changed = comparison.files ?? []
+          for (const { status, filename } of changed.slice(0, 30)) {
+            const item = document.createElement('li')
+            item.textContent = status + ': ' + filename
+            files.append(item)
+          }
+          if (changed.length > 30) {
+            const item = document.createElement('li')
+            item.textContent = '…and ' + (changed.length - 30) + ' more files'
+            files.append(item)
+          }
+          files.hidden = !changed.length
+        } else {
+          files.hidden = true
+        }
       } catch {
         changes.textContent = 'Could not check unpublished changes.'
       }
