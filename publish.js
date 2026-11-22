@@ -84,7 +84,7 @@ button.addEventListener('click', async () => {
     }
 
     statusElement.textContent = 'Publication requested. Follow its result in GitHub Actions.'
-    actions.href = `https://github.com/${repository}/actions/workflows/prod.yml`
+    actions.href = `https://github.com/${repository}/actions/workflows/deploy-prod.yml`
     actions.hidden = false
   }
   catch (error) {
