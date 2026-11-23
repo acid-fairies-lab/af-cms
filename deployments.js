@@ -36,7 +36,7 @@ async function refreshDeployments() {
   }
 
   clearTimeout(timer)
-  const list = history.querySelector('ul')
+  const body = history.querySelector('tbody')
   const status = history.querySelector('[role="status"]')
   try {
     const { workflow_runs: runs = [] } = await githubGet(
@@ -56,9 +56,12 @@ async function refreshDeployments() {
       skipped: '– Skipped',
     }
 
-    list.replaceChildren()
+    body.replaceChildren()
     for (const run of runs) {
-      const item = document.createElement('li')
+      const row = document.createElement('tr')
+      const runCell = document.createElement('td')
+      const statusCell = document.createElement('td')
+      const timeCell = document.createElement('td')
       const link = document.createElement('a')
       link.href = `https://github.com/${repository}/actions/runs/${run.id}`
       link.target = '_blank'
@@ -69,8 +72,11 @@ async function refreshDeployments() {
       const minutes = Math.max(0, Math.floor((Date.now() - new Date(started).getTime()) / 60_000))
       const delayed = (state === 'queued' && minutes >= 5) || (state === 'in_progress' && minutes >= 15)
       const elapsed = run.status === 'completed' ? '' : ` — ${minutes}m${delayed ? ' (possibly delayed)' : ''}`
-      item.append(link, ` — ${labels[state] ?? state ?? 'Unknown'}${elapsed} — ${new Date(run.created_at).toLocaleString()}`)
-      list.append(item)
+      runCell.append(link)
+      statusCell.textContent = `${labels[state] ?? state ?? 'Unknown'}${elapsed}`
+      timeCell.textContent = new Date(run.run_started_at ?? run.created_at).toLocaleString()
+      row.append(runCell, statusCell, timeCell)
+      body.append(row)
     }
     status.textContent = runs.length ? '' : 'No deployments yet.'
     active = runs.some(run => run.status !== 'completed')
