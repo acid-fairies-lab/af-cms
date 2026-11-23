@@ -1,17 +1,13 @@
-import { cmsSessionToken, githubGet, repository, sourceBranch, watchDeployments } from './deployments.js'
+import { cmsSessionToken, githubGet, publishedTag, repository, sourceBranch, watchDeployments } from './deployments.js'
 
 const button = document.querySelector('#publish')
 const statusElement = document.querySelector('#status')
 const changes = document.querySelector('#changes')
 const files = document.querySelector('#files')
 const actions = document.querySelector('#actions')
-const previewBranch = sourceBranch !== 'main'
-if (previewBranch) {
-  button.disabled = true
-  changes.textContent = `Testing ${sourceBranch}. Publish is available from main only.`
-}
 let publishing = false
 let requestedAt = 0
+let requestedRunId = 0
 
 function showPublishing(message) {
   publishing = true
@@ -21,13 +17,11 @@ function showPublishing(message) {
 }
 
 document.querySelector('[data-workflow]').addEventListener('deployments-updated', ({ detail: runs }) => {
-  if (previewBranch) {
-    return
-  }
-
   const active = runs.some(run => run.status !== 'completed')
-  const requestedRun = requestedAt && runs.find(run => run.event === 'repository_dispatch'
-    && new Date(run.created_at).getTime() >= requestedAt - 5000)
+  const requestedRun = requestedAt && runs.find(run => requestedRunId
+    ? run.id === requestedRunId
+    : run.event === (sourceBranch === 'main' ? 'repository_dispatch' : 'workflow_dispatch')
+      && new Date(run.created_at).getTime() >= requestedAt - 5000)
 
   if (active) {
     showPublishing('Publication in progress…')
@@ -35,6 +29,7 @@ document.querySelector('[data-workflow]').addEventListener('deployments-updated'
   else if (publishing && (!requestedAt || requestedRun)) {
     publishing = false
     requestedAt = 0
+    requestedRunId = 0
     button.disabled = false
     void checkPendingChanges()
   }
@@ -45,12 +40,8 @@ document.querySelector('[data-workflow]').addEventListener('deployments-updated'
 })
 
 async function checkPendingChanges() {
-  if (previewBranch) {
-    return
-  }
-
   try {
-    const comparison = await githubGet(`/repos/${repository}/compare/prod-published...main`, cmsSessionToken())
+    const comparison = await githubGet(`/repos/${repository}/compare/${encodeURIComponent(`${publishedTag}...${sourceBranch}`)}`, cmsSessionToken())
     if (publishing) {
       return
     }
@@ -85,10 +76,6 @@ async function checkPendingChanges() {
 }
 
 button.addEventListener('click', async () => {
-  if (previewBranch) {
-    return
-  }
-
   // eslint-disable-next-line no-alert -- explicit confirmation before publishing
   if (!confirm('Are you sure you want to publish all changes to the production website?')) {
     return
@@ -107,18 +94,22 @@ button.addEventListener('click', async () => {
     }
 
     const dispatchStartedAt = Date.now()
-    const response = await fetch(`https://api.github.com/repos/${repository}/dispatches`, {
+    const isMain = sourceBranch === 'main'
+    const endpoint = isMain ? 'dispatches' : 'actions/workflows/deploy-prod.yml/dispatches'
+    const body = isMain ? { event_type: 'sveltia-cms-publish' } : { ref: sourceBranch }
+    const response = await fetch(`https://api.github.com/repos/${repository}/${endpoint}`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
         'Accept': 'application/vnd.github+json',
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ event_type: 'sveltia-cms-publish' }),
+      body: JSON.stringify(body),
     })
-    if (response.status !== 204) {
+    if (!response.ok) {
       throw new Error(`GitHub rejected the publication request: HTTP ${response.status}`)
     }
+    requestedRunId = response.status === 200 ? (await response.json()).workflow_run_id ?? 0 : 0
 
     statusElement.textContent = 'Publication requested. Follow its status below.'
     requestedAt = dispatchStartedAt
