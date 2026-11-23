@@ -1,4 +1,4 @@
-import { cmsSessionToken, githubGet, publishedTag, repository, sourceBranch, watchDeployments } from './deployments.js'
+import { cmsSessionToken, githubGet, repository, sourceBranch, watchDeployments } from './deployments.js'
 
 const button = document.querySelector('#publish')
 const statusElement = document.querySelector('#status')
@@ -7,7 +7,6 @@ const files = document.querySelector('#files')
 const actions = document.querySelector('#actions')
 let publishing = false
 let requestedAt = 0
-let requestedRunId = 0
 
 function showPublishing(message) {
   publishing = true
@@ -18,10 +17,8 @@ function showPublishing(message) {
 
 document.querySelector('[data-workflow]').addEventListener('deployments-updated', ({ detail: runs }) => {
   const active = runs.some(run => run.status !== 'completed')
-  const requestedRun = requestedAt && runs.find(run => requestedRunId
-    ? run.id === requestedRunId
-    : run.event === (sourceBranch === 'main' ? 'repository_dispatch' : 'workflow_dispatch')
-      && new Date(run.created_at).getTime() >= requestedAt - 5000)
+  const requestedRun = requestedAt && runs.find(run => run.event === (sourceBranch === 'main' ? 'repository_dispatch' : 'workflow_dispatch')
+    && new Date(run.created_at).getTime() >= requestedAt - 5000)
 
   if (active) {
     showPublishing('Publication in progress…')
@@ -29,7 +26,6 @@ document.querySelector('[data-workflow]').addEventListener('deployments-updated'
   else if (publishing && (!requestedAt || requestedRun)) {
     publishing = false
     requestedAt = 0
-    requestedRunId = 0
     button.disabled = false
     void checkPendingChanges()
   }
@@ -41,14 +37,14 @@ document.querySelector('[data-workflow]').addEventListener('deployments-updated'
 
 async function checkPendingChanges() {
   try {
-    const comparison = await githubGet(`/repos/${repository}/compare/${encodeURIComponent(`${publishedTag}...${sourceBranch}`)}`, cmsSessionToken())
+    const comparison = await githubGet(`/repos/${repository}/compare/${encodeURIComponent(`prod-published...${sourceBranch}`)}`, cmsSessionToken())
     if (publishing) {
       return
     }
 
     if (comparison.behind_by > 0) {
       files.hidden = true
-      changes.textContent = 'The active branch differs from the currently published website. Publish to update PROD.'
+      changes.textContent = 'The active branch differs from the published website. Publish to update PROD.'
       return
     }
 
@@ -115,7 +111,6 @@ button.addEventListener('click', async () => {
     if (!response.ok) {
       throw new Error(`GitHub rejected the publication request: HTTP ${response.status}`)
     }
-    requestedRunId = response.status === 200 ? (await response.json()).workflow_run_id ?? 0 : 0
 
     statusElement.textContent = 'Publication requested. Follow its status below.'
     requestedAt = dispatchStartedAt

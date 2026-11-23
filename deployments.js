@@ -1,6 +1,5 @@
 export const repository = 'acid-fairies-lab/af-src'
 export const sourceBranch = 'experiment/lab-deploy-pr-branch'
-export const publishedTag = 'lab-prod-current'
 
 export function cmsSessionToken() {
   // Sveltia does not expose a public session API; keep this dependency isolated.
@@ -27,7 +26,7 @@ let watchingUntil = 0
 let active = false
 
 export function watchDeployments() {
-  // Allow time for a dispatched workflow run to appear in the API.
+  // repository_dispatch returns 204 without a run ID; allow time for the run to appear.
   watchingUntil = Date.now() + 120_000
   void refreshDeployments()
 }
@@ -41,8 +40,11 @@ async function refreshDeployments() {
   const body = history.querySelector('tbody')
   const status = history.querySelector('[role="status"]')
   try {
+    const workflow = history.dataset.workflow === 'deploy-stg.yml' && sourceBranch !== 'main'
+      ? 'deploy-lab.yml'
+      : history.dataset.workflow
     const { workflow_runs: runs = [] } = await githubGet(
-      `/repos/${repository}/actions/workflows/${history.dataset.workflow}/runs?branch=${encodeURIComponent(sourceBranch)}&per_page=10`,
+      `/repos/${repository}/actions/workflows/${workflow}/runs?branch=${encodeURIComponent(sourceBranch)}&per_page=10`,
     )
     const labels = {
       queued: '… Queued',
