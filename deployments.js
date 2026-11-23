@@ -69,9 +69,10 @@ async function refreshDeployments() {
       link.textContent = `#${run.run_number}`
       const state = run.status === 'completed' ? run.conclusion : run.status
       const started = run.status === 'in_progress' ? (run.run_started_at ?? run.created_at) : run.created_at
-      const minutes = Math.max(0, Math.floor((Date.now() - new Date(started).getTime()) / 60_000))
+      const seconds = Math.max(0, Math.floor((Date.now() - new Date(started).getTime()) / 1000))
+      const minutes = Math.floor(seconds / 60)
       const delayed = (state === 'queued' && minutes >= 5) || (state === 'in_progress' && minutes >= 15)
-      const elapsed = run.status === 'completed' ? '' : ` — ${minutes}m${delayed ? ' (possibly delayed)' : ''}`
+      const elapsed = run.status === 'completed' ? '' : ` — ${minutes}m ${seconds % 60}s${delayed ? ' (possibly delayed)' : ''}`
       runCell.append(link)
       statusCell.textContent = `${labels[state] ?? state ?? 'Unknown'}${elapsed}`
       timeCell.textContent = new Date(run.run_started_at ?? run.created_at).toLocaleString()
