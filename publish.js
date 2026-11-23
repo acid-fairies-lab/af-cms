@@ -1,28 +1,10 @@
-const repository = 'acid-fairies-lab/af-src'
+import { cmsSessionToken, githubGet, repository, watchDeployments } from './deployments.js'
+
 const button = document.querySelector('#publish')
 const statusElement = document.querySelector('#status')
 const changes = document.querySelector('#changes')
 const files = document.querySelector('#files')
 const actions = document.querySelector('#actions')
-
-function cmsSessionToken() {
-  // Sveltia does not expose a public session API; keep this dependency isolated.
-  const account = JSON.parse(localStorage.getItem('sveltia-cms.user') || '{}')
-  if (account.backendName !== 'github' || typeof account.token !== 'string' || !account.token) {
-    throw new Error('No GitHub session found. Sign in to Sveltia CMS and retry.')
-  }
-  return account.token
-}
-
-async function githubGet(path, token) {
-  const response = await fetch(`https://api.github.com${path}`, {
-    headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' },
-  })
-  if (!response.ok) {
-    throw new Error(`GitHub API returned HTTP ${response.status}`)
-  }
-  return response.json()
-}
 
 async function checkPendingChanges() {
   files.replaceChildren()
@@ -83,7 +65,8 @@ button.addEventListener('click', async () => {
       throw new Error(`GitHub rejected the publication request: HTTP ${response.status}`)
     }
 
-    statusElement.textContent = 'Publication requested. Follow its result in GitHub Actions.'
+    statusElement.textContent = 'Publication requested. Follow its status below.'
+    watchDeployments()
     actions.href = `https://github.com/${repository}/actions/workflows/deploy-prod.yml`
     actions.hidden = false
   }
@@ -97,4 +80,4 @@ button.addEventListener('click', async () => {
   }
 })
 
-checkPendingChanges()
+void checkPendingChanges()

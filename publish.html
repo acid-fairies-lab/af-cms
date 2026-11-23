@@ -35,6 +35,12 @@
     <ul id="files" hidden></ul>
     <button type="button" id="publish">Publish Changes</button>
     <p id="status" role="status" hidden></p>
+    <section data-workflow="deploy-prod.yml">
+      <h2>Deployment history</h2>
+      <p role="status">Loading deployment history…</p>
+      <ul></ul>
+      <button type="button" data-refresh>Refresh</button>
+    </section>
     <p><a id="actions" target="_blank" rel="noopener noreferrer" hidden>View deployment workflow</a></p>
     <script type="module" src="./publish.js"></script>
   </body>

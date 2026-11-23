@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="robots" content="noindex" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Preview STG</title>
+    <style>
+      body {
+        font:
+          16px system-ui,
+          sans-serif;
+        padding: 2rem;
+      }
+      button {
+        font: inherit;
+        padding: 0.65rem 1rem;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Preview STG</h1>
+    <p>
+      Review saved changes before publishing.
+      <a href="https://stg.acidfairies.cc.cd" target="_blank" rel="noopener noreferrer">Open STG</a>
+    </p>
+    <section data-workflow="deploy-stg.yml">
+      <h2>Deployment history</h2>
+      <p role="status">Loading deployment history…</p>
+      <ul></ul>
+      <button type="button" data-refresh>Refresh</button>
+    </section>
+    <script type="module" src="./deployments.js"></script>
+  </body>
+</html>

@@ -1,0 +1,89 @@
+export const repository = 'acid-fairies-lab/af-src'
+
+export function cmsSessionToken() {
+  // Sveltia does not expose a public session API; keep this dependency isolated.
+  const account = JSON.parse(localStorage.getItem('sveltia-cms.user') || '{}')
+  if (account.backendName !== 'github' || typeof account.token !== 'string' || !account.token) {
+    throw new Error('No GitHub session found. Sign in to Sveltia CMS and retry.')
+  }
+  return account.token
+}
+
+export async function githubGet(path, token = cmsSessionToken()) {
+  const response = await fetch(`https://api.github.com${path}`, {
+    headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' },
+  })
+  if (!response.ok) {
+    throw new Error(`GitHub API returned HTTP ${response.status}`)
+  }
+  return response.json()
+}
+
+const history = document.querySelector('[data-workflow]')
+let timer
+let watchingUntil = 0
+let active = false
+
+export function watchDeployments() {
+  // repository_dispatch returns 204 without a run ID; allow time for the run to appear.
+  watchingUntil = Date.now() + 120_000
+  void refreshDeployments()
+}
+
+async function refreshDeployments() {
+  if (!history) {
+    return
+  }
+
+  clearTimeout(timer)
+  const list = history.querySelector('ul')
+  const status = history.querySelector('[role="status"]')
+  try {
+    const { workflow_runs: runs = [] } = await githubGet(
+      `/repos/${repository}/actions/workflows/${history.dataset.workflow}/runs?per_page=5`,
+    )
+    const labels = {
+      queued: '… Queued',
+      in_progress: '◌ Running',
+      waiting: '… Waiting',
+      pending: '… Pending',
+      requested: '… Requested',
+      success: '✓ Success',
+      failure: '✕ Failed',
+      cancelled: '– Cancelled',
+      timed_out: '✕ Timed out',
+      action_required: '! Action required',
+      skipped: '– Skipped',
+    }
+
+    list.replaceChildren()
+    for (const run of runs) {
+      const item = document.createElement('li')
+      const link = document.createElement('a')
+      link.href = `https://github.com/${repository}/actions/runs/${run.id}`
+      link.target = '_blank'
+      link.rel = 'noopener noreferrer'
+      link.textContent = `#${run.run_number}`
+      const state = run.status === 'completed' ? run.conclusion : run.status
+      item.append(link, ` — ${labels[state] ?? state ?? 'Unknown'} — ${new Date(run.created_at).toLocaleString()}`)
+      list.append(item)
+    }
+    status.textContent = runs.length ? '' : 'No deployments yet.'
+    active = runs.some(run => run.status !== 'completed')
+  }
+  catch (error) {
+    status.textContent = error.message === 'GitHub API returned HTTP 401'
+      ? 'GitHub session expired. Sign in to Sveltia CMS and retry.'
+      : error.message === 'GitHub API returned HTTP 403'
+        ? 'Could not read GitHub Actions. Check session permissions (Actions: read).'
+        : `Could not load deployment history: ${error.message}`
+  }
+  if (active || Date.now() < watchingUntil) {
+    timer = setTimeout(refreshDeployments, 10_000)
+  }
+}
+
+history?.querySelector('[data-refresh]')?.addEventListener('click', () => {
+  void refreshDeployments()
+})
+void refreshDeployments()
