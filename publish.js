@@ -46,6 +46,12 @@ async function checkPendingChanges() {
       return
     }
 
+    if (comparison.behind_by > 0) {
+      files.hidden = true
+      changes.textContent = 'The active branch differs from the currently published website. Publish to update PROD.'
+      return
+    }
+
     files.replaceChildren()
     const changed = comparison.files ?? []
     changes.textContent = changed.length
