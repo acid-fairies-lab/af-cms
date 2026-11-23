@@ -1,4 +1,5 @@
 export const repository = 'acid-fairies-lab/af-src'
+export const sourceBranch = 'experiment/lab-deploy-pr-branch'
 
 export function cmsSessionToken() {
   // Sveltia does not expose a public session API; keep this dependency isolated.

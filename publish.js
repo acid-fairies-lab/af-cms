@@ -1,10 +1,15 @@
-import { cmsSessionToken, githubGet, repository, watchDeployments } from './deployments.js'
+import { cmsSessionToken, githubGet, repository, sourceBranch, watchDeployments } from './deployments.js'
 
 const button = document.querySelector('#publish')
 const statusElement = document.querySelector('#status')
 const changes = document.querySelector('#changes')
 const files = document.querySelector('#files')
 const actions = document.querySelector('#actions')
+const previewBranch = sourceBranch !== 'main'
+if (previewBranch) {
+  button.disabled = true
+  changes.textContent = `Testing ${sourceBranch}. Publish is available from main only.`
+}
 let publishing = false
 let requestedAt = 0
 
@@ -16,6 +21,10 @@ function showPublishing(message) {
 }
 
 document.querySelector('[data-workflow]').addEventListener('deployments-updated', ({ detail: runs }) => {
+  if (previewBranch) {
+    return
+  }
+
   const active = runs.some(run => run.status !== 'completed')
   const requestedRun = requestedAt && runs.find(run => run.event === 'repository_dispatch'
     && new Date(run.created_at).getTime() >= requestedAt - 5000)
@@ -36,6 +45,10 @@ document.querySelector('[data-workflow]').addEventListener('deployments-updated'
 })
 
 async function checkPendingChanges() {
+  if (previewBranch) {
+    return
+  }
+
   try {
     const comparison = await githubGet(`/repos/${repository}/compare/prod-published...main`, cmsSessionToken())
     if (publishing) {
@@ -72,6 +85,10 @@ async function checkPendingChanges() {
 }
 
 button.addEventListener('click', async () => {
+  if (previewBranch) {
+    return
+  }
+
   // eslint-disable-next-line no-alert -- explicit confirmation before publishing
   if (!confirm('Are you sure you want to publish all changes to the production website?')) {
     return

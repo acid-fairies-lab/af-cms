@@ -1,7 +1,7 @@
 backend:
   name: github
   repo: acid-fairies-lab/af-src
-  branch: main
+  branch: experiment/lab-deploy-pr-branch
   base_url: https://sveltia-cms-auth.adam-artajew.workers.dev
 
 site_url: https://acidfairies.cc.cd
