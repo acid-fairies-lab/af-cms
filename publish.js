@@ -5,11 +5,44 @@ const statusElement = document.querySelector('#status')
 const changes = document.querySelector('#changes')
 const files = document.querySelector('#files')
 const actions = document.querySelector('#actions')
+let publishing = false
+let requestedAt = 0
+
+function showPublishing(message) {
+  publishing = true
+  button.disabled = true
+  files.hidden = true
+  changes.textContent = message
+}
+
+document.querySelector('[data-workflow]').addEventListener('deployments-updated', ({ detail: runs }) => {
+  const active = runs.some(run => run.status !== 'completed')
+  const requestedRun = requestedAt && runs.find(run => run.event === 'repository_dispatch'
+    && new Date(run.created_at).getTime() >= requestedAt - 5000)
+
+  if (active) {
+    showPublishing('Publication in progress…')
+  }
+  else if (publishing && (!requestedAt || requestedRun)) {
+    publishing = false
+    requestedAt = 0
+    button.disabled = false
+    void checkPendingChanges()
+  }
+  else if (!publishing) {
+    // Keep the pending list current even if GitHub updates the tag slightly later.
+    void checkPendingChanges()
+  }
+})
 
 async function checkPendingChanges() {
-  files.replaceChildren()
   try {
     const comparison = await githubGet(`/repos/${repository}/compare/prod-published...main`, cmsSessionToken())
+    if (publishing) {
+      return
+    }
+
+    files.replaceChildren()
     const changed = comparison.files ?? []
     changes.textContent = changed.length
       ? `${changed.length} changed file${changed.length === 1 ? '' : 's'} awaiting publication:`
@@ -27,6 +60,10 @@ async function checkPendingChanges() {
     files.hidden = !changed.length
   }
   catch (error) {
+    if (publishing) {
+      return
+    }
+
     files.hidden = true
     changes.textContent = error.message === 'GitHub API returned HTTP 404'
       ? 'Production baseline not initialized. Publish once to start tracking changes.'
@@ -52,6 +89,7 @@ button.addEventListener('click', async () => {
       throw new Error(`GitHub account ${user.login} has no write access to ${repository}`)
     }
 
+    const dispatchStartedAt = Date.now()
     const response = await fetch(`https://api.github.com/repos/${repository}/dispatches`, {
       method: 'POST',
       headers: {
@@ -66,6 +104,8 @@ button.addEventListener('click', async () => {
     }
 
     statusElement.textContent = 'Publication requested. Follow its status below.'
+    requestedAt = dispatchStartedAt
+    showPublishing('Publication requested… Pending changes will update after deployment.')
     watchDeployments()
     actions.href = `https://github.com/${repository}/actions/workflows/deploy-prod.yml`
     actions.hidden = false
@@ -76,7 +116,7 @@ button.addEventListener('click', async () => {
       : error.message || 'Failed to request publication.'
   }
   finally {
-    button.disabled = false
+    button.disabled = publishing
   }
 })
 

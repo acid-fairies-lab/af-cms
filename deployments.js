@@ -74,6 +74,7 @@ async function refreshDeployments() {
     }
     status.textContent = runs.length ? '' : 'No deployments yet.'
     active = runs.some(run => run.status !== 'completed')
+    history.dispatchEvent(new CustomEvent('deployments-updated', { detail: runs }))
   }
   catch (error) {
     status.textContent = error.message === 'GitHub API returned HTTP 401'
