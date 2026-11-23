@@ -40,7 +40,7 @@ async function refreshDeployments() {
   const status = history.querySelector('[role="status"]')
   try {
     const { workflow_runs: runs = [] } = await githubGet(
-      `/repos/${repository}/actions/workflows/${history.dataset.workflow}/runs?per_page=5`,
+      `/repos/${repository}/actions/workflows/${history.dataset.workflow}/runs?per_page=10`,
     )
     const labels = {
       queued: '… Queued',
