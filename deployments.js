@@ -65,7 +65,11 @@ async function refreshDeployments() {
       link.rel = 'noopener noreferrer'
       link.textContent = `#${run.run_number}`
       const state = run.status === 'completed' ? run.conclusion : run.status
-      item.append(link, ` — ${labels[state] ?? state ?? 'Unknown'} — ${new Date(run.created_at).toLocaleString()}`)
+      const started = run.status === 'in_progress' ? (run.run_started_at ?? run.created_at) : run.created_at
+      const minutes = Math.max(0, Math.floor((Date.now() - new Date(started).getTime()) / 60_000))
+      const delayed = (state === 'queued' && minutes >= 5) || (state === 'in_progress' && minutes >= 15)
+      const elapsed = run.status === 'completed' ? '' : ` — ${minutes}m${delayed ? ' (possibly delayed)' : ''}`
+      item.append(link, ` — ${labels[state] ?? state ?? 'Unknown'}${elapsed} — ${new Date(run.created_at).toLocaleString()}`)
       list.append(item)
     }
     status.textContent = runs.length ? '' : 'No deployments yet.'
@@ -78,9 +82,7 @@ async function refreshDeployments() {
         ? 'Could not read GitHub Actions. Check session permissions (Actions: read).'
         : `Could not load deployment history: ${error.message}`
   }
-  if (active || Date.now() < watchingUntil) {
-    timer = setTimeout(refreshDeployments, 10_000)
-  }
+  timer = setTimeout(refreshDeployments, active || Date.now() < watchingUntil ? 10_000 : 30_000)
 }
 
 history?.querySelector('[data-refresh]')?.addEventListener('click', () => {
