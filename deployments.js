@@ -40,7 +40,7 @@ async function refreshDeployments() {
   const body = history.querySelector('tbody')
   const status = history.querySelector('[role="status"]')
   try {
-    const workflow = history.dataset.workflow === 'deploy-stg.yml' && repository === 'acid-fairies-lab/af-src'
+    const workflow = history.dataset.workflow === 'deploy-stg.yml' && sourceBranch !== 'main'
       ? 'deploy-lab.yml'
       : history.dataset.workflow
     const { workflow_runs: runs = [] } = await githubGet(
