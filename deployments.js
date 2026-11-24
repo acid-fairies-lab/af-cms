@@ -30,7 +30,7 @@ let watchingUntil = 0
 let active = false
 
 export function watchDeployments() {
-  // repository_dispatch returns 204 without a run ID; allow time for the run to appear.
+  // Allow time for the requested deployment to appear in the history.
   watchingUntil = Date.now() + 120_000
   void refreshDeployments()
 }
@@ -46,8 +46,8 @@ async function refreshDeployments() {
   try {
     const previewPublish = previewPr && document.querySelector('#publish')
     const query = previewPublish
-      ? 'per_page=100&branch=main&event=repository_dispatch'
-      : `per_page=10&branch=${encodeURIComponent(branch)}`
+      ? `per_page=100&branch=${encodeURIComponent(branch)}&event=workflow_dispatch`
+      : `per_page=10&branch=${encodeURIComponent(branch)}${previewPr ? '&event=pull_request' : ''}`
     const { workflow_runs: allRuns = [] } = await githubGet(
       `/repos/${repository}/actions/workflows/${history.dataset.workflow}/runs?${query}`,
     )
