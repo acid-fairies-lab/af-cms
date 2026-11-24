@@ -1,5 +1,6 @@
 export const repository = 'acid-fairies-lab/af-src'
-export const sourceBranch = 'experiment/lab-deploy-pr-branch'
+export const branch = 'main'
+export const previewPr = ''
 
 export function cmsSessionToken() {
   // Sveltia does not expose a public session API; keep this dependency isolated.
@@ -21,6 +22,9 @@ export async function githubGet(path, token = cmsSessionToken()) {
 }
 
 const history = document.querySelector('[data-workflow]')
+if (history) {
+  history.querySelector('#actions').href = `https://github.com/${repository}/actions/workflows/${history.dataset.workflow}`
+}
 let timer
 let watchingUntil = 0
 let active = false
@@ -40,12 +44,16 @@ async function refreshDeployments() {
   const body = history.querySelector('tbody')
   const status = history.querySelector('[role="status"]')
   try {
-    const workflow = history.dataset.workflow === 'deploy-stg.yml' && sourceBranch !== 'main'
-      ? 'deploy-lab.yml'
-      : history.dataset.workflow
-    const { workflow_runs: runs = [] } = await githubGet(
-      `/repos/${repository}/actions/workflows/${workflow}/runs?branch=${encodeURIComponent(sourceBranch)}&per_page=10`,
+    const previewPublish = previewPr && document.querySelector('#publish')
+    const query = previewPublish
+      ? 'per_page=100&branch=main&event=repository_dispatch'
+      : `per_page=10&branch=${encodeURIComponent(branch)}`
+    const { workflow_runs: allRuns = [] } = await githubGet(
+      `/repos/${repository}/actions/workflows/${history.dataset.workflow}/runs?${query}`,
     )
+    const runs = previewPublish
+      ? allRuns.filter(run => run.display_title === `Publish PROD PR-${previewPr}`).slice(0, 10)
+      : allRuns
     const labels = {
       queued: '… Queued',
       in_progress: '◌ Running',

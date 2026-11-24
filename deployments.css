@@ -1,0 +1,52 @@
+:root {
+  color-scheme: light dark;
+}
+
+body {
+  font:
+    16px system-ui,
+    sans-serif;
+  padding: 2rem;
+  background: light-dark(#fff, #17191b);
+  color: CanvasText;
+}
+button,
+.button {
+  font: inherit;
+  padding: 0.65rem 1rem;
+  cursor: pointer;
+  display: inline-block;
+  background: light-dark(#222, #e1e1e1);
+  color: light-dark(#fff, #17191b);
+  text-decoration: none;
+  border: 0;
+  border-radius: 0.25rem;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+#files {
+  font-family: ui-monospace, monospace;
+  overflow-wrap: anywhere;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  max-width: 40rem;
+  margin-bottom: 1rem;
+}
+th,
+td {
+  border-bottom: 1px solid light-dark(#ddd, #444);
+  padding: 0.5rem 2rem 0.5rem 0;
+  text-align: left;
+}

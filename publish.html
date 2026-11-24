@@ -5,45 +5,24 @@
     <meta name="robots" content="noindex" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Publish to Production</title>
-    <style>
-      body {
-        font:
-          16px system-ui,
-          sans-serif;
-        padding: 2rem;
-      }
-      button {
-        font: inherit;
-        padding: 0.65rem 1rem;
-        cursor: pointer;
-      }
-      button:disabled {
-        cursor: wait;
-      }
-      #files {
-        font-family: ui-monospace, monospace;
-        overflow-wrap: anywhere;
-      }
-      table {
-        border-collapse: collapse;
-        margin-bottom: 1rem;
-      }
-      th,
-      td {
-        border-bottom: 1px solid #ddd;
-        padding: 0.5rem 2rem 0.5rem 0;
-        text-align: left;
-      }
-    </style>
+    <link rel="stylesheet" href="./deployments.css" />
   </head>
   <body>
-    <p>
-      Publish all saved changes to the production website.
-      <a href="https://stg.acidfairies.cc.cd" target="_blank" rel="noopener noreferrer">Preview STG</a>
-    </p>
+    <p>Publish all saved changes to the production website.</p>
+    <nav class="actions">
+      <a class="button" href="https://stg.acidfairies.cc.cd" target="_blank" rel="noopener noreferrer">Open STG</a>
+      <a class="button" href="https://acidfairies.cc.cd" target="_blank" rel="noopener noreferrer">Open PROD</a>
+    </nav>
     <p id="changes" role="status">Checking for unpublished changes…</p>
     <ul id="files" hidden></ul>
     <button type="button" id="publish">Publish Changes</button>
+    <dialog id="publish-dialog" aria-labelledby="publish-target">
+      <p id="publish-target"></p>
+      <form method="dialog">
+        <button value="cancel" autofocus>Cancel</button>
+        <button value="publish">Publish</button>
+      </form>
+    </dialog>
     <p id="status" role="status" hidden></p>
     <section data-workflow="deploy-prod.yml">
       <h2>Deployment history</h2>
@@ -60,9 +39,11 @@
         </thead>
         <tbody></tbody>
       </table>
-      <button type="button" data-refresh>Refresh</button>
+      <nav class="actions">
+        <button type="button" data-refresh>Refresh</button>
+        <a class="button" id="actions" target="_blank" rel="noopener noreferrer">GitHub Actions</a>
+      </nav>
     </section>
-    <p><a id="actions" target="_blank" rel="noopener noreferrer" hidden>View deployment workflow</a></p>
     <script type="module" src="./publish.js"></script>
   </body>
 </html>

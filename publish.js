@@ -1,12 +1,13 @@
-import { cmsSessionToken, githubGet, repository, sourceBranch, watchDeployments } from './deployments.js'
+import { branch, cmsSessionToken, githubGet, previewPr, repository, watchDeployments } from './deployments.js'
 
 const button = document.querySelector('#publish')
 const statusElement = document.querySelector('#status')
 const changes = document.querySelector('#changes')
 const files = document.querySelector('#files')
-const actions = document.querySelector('#actions')
 let publishing = false
 let requestedAt = 0
+const preview = branch !== 'main' || !!previewPr
+const tag = preview ? `pr-${previewPr}-prod-published` : 'prod-published'
 
 function showPublishing(message) {
   publishing = true
@@ -17,13 +18,13 @@ function showPublishing(message) {
 
 document.querySelector('[data-workflow]').addEventListener('deployments-updated', ({ detail: runs }) => {
   const active = runs.some(run => run.status !== 'completed')
-  const requestedRun = requestedAt && runs.find(run => run.event === (sourceBranch === 'main' ? 'repository_dispatch' : 'workflow_dispatch')
+  const requestedRun = requestedAt && runs.find(run => run.event === 'repository_dispatch'
     && new Date(run.created_at).getTime() >= requestedAt - 5000)
 
   if (active) {
     showPublishing('Publication in progress…')
   }
-  else if (publishing && (!requestedAt || requestedRun)) {
+  else if (publishing && (!requestedAt || requestedRun || Date.now() - requestedAt > 120_000)) {
     publishing = false
     requestedAt = 0
     button.disabled = false
@@ -37,14 +38,8 @@ document.querySelector('[data-workflow]').addEventListener('deployments-updated'
 
 async function checkPendingChanges() {
   try {
-    const comparison = await githubGet(`/repos/${repository}/compare/${encodeURIComponent(`prod-published...${sourceBranch}`)}`, cmsSessionToken())
+    const comparison = await githubGet(`/repos/${repository}/compare/${tag}...${encodeURIComponent(branch)}`)
     if (publishing) {
-      return
-    }
-
-    if (comparison.behind_by > 0) {
-      files.hidden = true
-      changes.textContent = 'The active branch differs from the published website. Publish to update PROD.'
       return
     }
 
@@ -72,43 +67,42 @@ async function checkPendingChanges() {
 
     files.hidden = true
     changes.textContent = error.message === 'GitHub API returned HTTP 404'
-      ? 'Production baseline not initialized. Publish once to start tracking changes.'
+      ? 'Production baseline not initialized.'
       : 'Could not check unpublished changes.'
   }
 }
 
-button.addEventListener('click', async () => {
-  // eslint-disable-next-line no-alert -- explicit confirmation before publishing
-  if (!confirm('Are you sure you want to publish all changes to the production website?')) {
+const dialog = document.querySelector('#publish-dialog')
+document.querySelector('#publish-target').textContent = `Publish all saved changes to ${preview ? `PROD preview PR #${previewPr}` : 'production'}?`
+button.addEventListener('click', () => {
+  dialog.returnValue = ''
+  dialog.showModal()
+})
+
+dialog.addEventListener('close', async () => {
+  if (dialog.returnValue !== 'publish' || button.disabled) {
     return
   }
 
   button.disabled = true
-  actions.hidden = true
   statusElement.hidden = false
   statusElement.textContent = 'Requesting publication…'
 
   try {
     const token = cmsSessionToken()
-    const [user, repo] = await Promise.all([githubGet('/user', token), githubGet(`/repos/${repository}`, token)])
-    if (repo.full_name !== repository || repo.permissions?.push !== true) {
-      throw new Error(`GitHub account ${user.login} has no write access to ${repository}`)
-    }
-
     const dispatchStartedAt = Date.now()
-    const isMain = sourceBranch === 'main'
-    const endpoint = isMain ? 'dispatches' : 'actions/workflows/deploy-prod.yml/dispatches'
-    const body = isMain ? { event_type: 'sveltia-cms-publish' } : { ref: sourceBranch }
-    const response = await fetch(`https://api.github.com/repos/${repository}/${endpoint}`, {
+    const response = await fetch(`https://api.github.com/repos/${repository}/dispatches`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
         'Accept': 'application/vnd.github+json',
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify(preview
+        ? { event_type: 'sveltia-cms-publish-preview', client_payload: { pr: Number(previewPr) } }
+        : { event_type: 'sveltia-cms-publish' }),
     })
-    if (!response.ok) {
+    if (response.status !== 204) {
       throw new Error(`GitHub rejected the publication request: HTTP ${response.status}`)
     }
 
@@ -116,11 +110,9 @@ button.addEventListener('click', async () => {
     requestedAt = dispatchStartedAt
     showPublishing('Publication requested… Pending changes will update after deployment.')
     watchDeployments()
-    actions.href = `https://github.com/${repository}/actions/workflows/deploy-prod.yml`
-    actions.hidden = false
   }
   catch (error) {
-    statusElement.textContent = error.message === 'GitHub API returned HTTP 401'
+    statusElement.textContent = error.message === 'GitHub rejected the publication request: HTTP 401'
       ? 'GitHub session expired. Refresh or sign in to Sveltia CMS and retry.'
       : error.message || 'Failed to request publication.'
   }

@@ -5,35 +5,13 @@
     <meta name="robots" content="noindex" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Preview STG</title>
-    <style>
-      body {
-        font:
-          16px system-ui,
-          sans-serif;
-        padding: 2rem;
-      }
-      button {
-        font: inherit;
-        padding: 0.65rem 1rem;
-        cursor: pointer;
-      }
-      table {
-        border-collapse: collapse;
-        margin-bottom: 1rem;
-      }
-      th,
-      td {
-        border-bottom: 1px solid #ddd;
-        padding: 0.5rem 2rem 0.5rem 0;
-        text-align: left;
-      }
-    </style>
+    <link rel="stylesheet" href="./deployments.css" />
   </head>
   <body>
-    <p>
-      Review saved changes before publishing.
-      <a href="https://stg.acidfairies.cc.cd" target="_blank" rel="noopener noreferrer">Open STG</a>
-    </p>
+    <p>Review saved changes before publishing.</p>
+    <nav class="actions">
+      <a class="button" href="https://stg.acidfairies.cc.cd" target="_blank" rel="noopener noreferrer">Open STG</a>
+    </nav>
     <section data-workflow="deploy-stg.yml">
       <h2>Deployment history</h2>
       <p>Auto-refreshes every 30s (10s during deployment).</p>
@@ -49,7 +27,10 @@
         </thead>
         <tbody></tbody>
       </table>
-      <button type="button" data-refresh>Refresh</button>
+      <nav class="actions">
+        <button type="button" data-refresh>Refresh</button>
+        <a class="button" id="actions" target="_blank" rel="noopener noreferrer">GitHub Actions</a>
+      </nav>
     </section>
     <script type="module" src="./deployments.js"></script>
   </body>
