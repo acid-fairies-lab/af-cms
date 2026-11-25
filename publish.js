@@ -18,7 +18,7 @@ function showPublishing(message) {
 
 document.querySelector('[data-workflow]').addEventListener('deployments-updated', ({ detail: runs }) => {
   const active = runs.some(run => run.status !== 'completed')
-  const requestedRun = requestedAt && runs.find(run => run.event === (preview ? 'workflow_dispatch' : 'repository_dispatch')
+  const requestedRun = requestedAt && runs.find(run => run.event === 'workflow_dispatch'
     && new Date(run.created_at).getTime() >= requestedAt - 5000)
 
   if (active) {
@@ -91,17 +91,14 @@ dialog.addEventListener('close', async () => {
   try {
     const token = cmsSessionToken()
     const dispatchStartedAt = Date.now()
-    const endpoint = preview ? 'actions/workflows/ci.yml/dispatches' : 'dispatches'
-    const response = await fetch(`https://api.github.com/repos/${repository}/${endpoint}`, {
+    const response = await fetch(`https://api.github.com/repos/${repository}/actions/workflows/deploy-prod.yml/dispatches`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
         'Accept': 'application/vnd.github+json',
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(preview
-        ? { ref: branch, inputs: { pr: previewPr } }
-        : { event_type: 'sveltia-cms-publish' }),
+      body: JSON.stringify({ ref: branch, inputs: { pr_deployment: preview, pr_number: previewPr, force_build: false } }),
     })
     if (!response.ok) {
       throw new Error(`GitHub rejected the publication request: HTTP ${response.status}`)

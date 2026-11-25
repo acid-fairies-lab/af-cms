@@ -44,16 +44,10 @@ async function refreshDeployments() {
   const body = history.querySelector('tbody')
   const status = history.querySelector('[role="status"]')
   try {
-    const previewPublish = previewPr && document.querySelector('#publish')
-    const query = previewPublish
-      ? `per_page=100&branch=${encodeURIComponent(branch)}&event=workflow_dispatch`
-      : `per_page=10&branch=${encodeURIComponent(branch)}${previewPr ? '&event=pull_request' : ''}`
-    const { workflow_runs: allRuns = [] } = await githubGet(
+    const query = `per_page=10&branch=${encodeURIComponent(branch)}${previewPr && !document.querySelector('#publish') ? '&event=pull_request' : ''}`
+    const { workflow_runs: runs = [] } = await githubGet(
       `/repos/${repository}/actions/workflows/${history.dataset.workflow}/runs?${query}`,
     )
-    const runs = previewPublish
-      ? allRuns.filter(run => run.display_title === `Publish PROD PR-${previewPr}`).slice(0, 10)
-      : allRuns
     const labels = {
       queued: '… Queued',
       in_progress: '◌ Running',
