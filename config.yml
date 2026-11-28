@@ -293,6 +293,12 @@ collections:
             display_fields: ['{{title}} ({{permalink}}) {{comment}}']
             required: false
             hint: Page shown after checkout. If not selected or unavailable, the customer returns to the cart.
+      - label: Shipping
+        name: shipping
+        file: /content/settings/shipping.md
+        icon: local_shipping
+        fields:
+          - {label: Section, name: section, widget: hidden, default: shipping}
           - label: Supported countries
             name: supportedCountries
             widget: select
@@ -537,15 +543,24 @@ collections:
               - {label: Yemen, value: YE}
               - {label: Zambia, value: ZM}
               - {label: Zimbabwe, value: ZW}
-          - {label: Default shipping price, name: defaultShippingPrice, widget: number, value_type: float, min: 0, step: 0.01, required: false, hint: Fee per order for all selected countries unless an exception is set below. Enter 0 for free shipping or leave blank to ship only to the listed exceptions.}
-          - label: Shipping Exceptions
-            name: shippingExceptions
+          - label: Shipping methods
+            name: shippingMethods
             widget: list
+            max: 5
             required: false
-            hint: Add exceptions for selected countries only. Each country can be added once. Remove exceptions for countries you no longer ship to.
+            collapsed: true
+            summary: '{{fields.name}}'
+            hint: Add up to five delivery methods with different names, in the order customers should see them in Stripe Checkout.
             fields:
-              - label: Country
-                name: country
-                widget: supported-country
-                options: *shippingCountries
-              - {label: Shipping price, name: price, widget: number, value_type: float, min: 0, step: 0.01, hint: Fee per order for this country in the shop currency. Enter 0 for free shipping.}
+              - {label: Name, name: name, widget: string, maxlength: 50}
+              - {label: Estimated delivery, name: estimate, widget: string, maxlength: 47, required: false, hint: 'For example: 5–10 business days.'}
+              - {label: Default shipping price, name: defaultPrice, widget: number, value_type: float, min: 0, max: 100000, step: 0.01, required: false, hint: Fee per order in the shop currency. Enter 0 for free shipping or leave blank to offer this method only in countries listed below.}
+              - label: Shipping exceptions
+                name: exceptions
+                widget: list
+                required: false
+                collapsed: true
+                hint: Add each country at most once per delivery method.
+                fields:
+                  - {label: Country, name: country, widget: select, options: *shippingCountries}
+                  - {label: Shipping price, name: price, widget: number, value_type: float, min: 0, max: 100000, step: 0.01, hint: Fee per order for this country.}
